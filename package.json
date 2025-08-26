@@ -1,0 +1,23 @@
+{
+  "name": "sass-monorepo",
+  "private": "true",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev:sass": "pnpm --filter @apps/sass dev",
+    "dev:ui": "pnpm --filter @pkgs/ui dev",
+    "build:sass": "pnpm --filter @apps/sass build",
+    "build:ui": "pnpm --filter @pkgs/ui build",
+    "preview:sass": "pnpm --filter @apps/sass preview",
+    "preview:ui": "pnpm --filter @pkgs/ui preview"
+  },
+  "devDependencies": {
+    "@unocss/nuxt": "^66.4.2",
+    "unocss": "^66.4.2",
+    "unocss-preset-shadcn": "^0.5.0"
+  }
+}
