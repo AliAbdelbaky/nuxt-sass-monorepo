@@ -6,8 +6,8 @@ import tseslint from 'typescript-eslint';
 import unocss from '@unocss/eslint-config/flat';
 import globals from 'globals';
 import prettierRecommended from 'eslint-plugin-prettier/recommended';
-console.log('unocss');
-const ss = 21
+console.log('unocssss');
+const ss = 21222
 export default [
   // 1. Ignore build artifacts
   {
