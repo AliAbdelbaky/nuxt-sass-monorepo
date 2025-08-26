@@ -1,6 +1,6 @@
 {
   "name": "sass-monorepo",
-  "private": "true",
+  "private": true,
   "type": "module",
   "workspaces": [
     "packages/*",
@@ -8,16 +8,42 @@
   ],
   "scripts": {
     "build": "pnpm -r build",
+    "dev": "pnpm -r --parallel dev",
+    "clean": "pnpm -r exec rimraf .nuxt .output dist node_modules",
     "dev:sass": "pnpm --filter @apps/sass dev",
-    "dev:ui": "pnpm --filter @pkgs/ui dev",
     "build:sass": "pnpm --filter @apps/sass build",
-    "build:ui": "pnpm --filter @pkgs/ui build",
     "preview:sass": "pnpm --filter @apps/sass preview",
-    "preview:ui": "pnpm --filter @pkgs/ui preview"
+    "dev:ui": "pnpm --filter @pkgs/ui dev",
+    "build:ui": "pnpm --filter @pkgs/ui build",
+    "preview:ui": "pnpm --filter @pkgs/ui preview",
+    "lint": "eslint . --ext .js,.ts,.vue",
+    "lint:fix": "eslint . --fix --ext .js,.ts,.vue",
+    "format": "prettier --write .",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@eslint/js": "^9.34.0",
+    "@nuxt/eslint-config": "^1.9.0",
+    "@unocss/eslint-config": "^66.4.2",
     "@unocss/nuxt": "^66.4.2",
+    "eslint": "^9.34.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-vue": "^10.4.0",
+    "globals": "^16.3.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
+    "prettier": "^3.6.2",
+    "rimraf": "^6.0.1",
+    "typescript-eslint": "^8.41.0",
     "unocss": "^66.4.2",
-    "unocss-preset-shadcn": "^0.5.0"
+    "unocss-preset-shadcn": "^0.5.0",
+    "vue-eslint-parser": "^10.2.0"
+  },
+  "lint-staged": {
+    "*.{js,ts,vue}": "eslint --fix",
+    "*.{js,ts,vue,css,md,json}": "prettier --write --ignore-unknown"
   }
 }
