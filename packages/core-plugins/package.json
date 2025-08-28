@@ -1,0 +1,22 @@
+{
+  "name": "@pkgs/core-plugins",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./api-provider": "./src/api-provider/module.ts",
+    "./crypto": "./src/crypto/module.ts",
+    "./analytics": "./src/analytics/module.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "dependencies": {
+    "@nuxt/kit": "^3.13.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}

@@ -84,9 +84,22 @@ importers:
         specifier: ^4.5.1
         version: 4.5.1(vue@3.5.20(typescript@5.9.2))
     devDependencies:
+      '@pkgs/core-plugins':
+        specifier: workspace:^
+        version: link:../../packages/core-plugins
       '@pkgs/ui':
         specifier: workspace:^
         version: link:../../packages/ui
+
+  packages/core-plugins:
+    dependencies:
+      '@nuxt/kit':
+        specifier: ^3.13.0
+        version: 3.18.1(magicast@0.3.5)
+    devDependencies:
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.2
 
   packages/ui:
     dependencies:

@@ -2,25 +2,36 @@
   "name": "sass-monorepo",
   "private": true,
   "type": "module",
-  "workspaces": [
-    "packages/*",
-    "apps/*"
-  ],
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=18.18 <=22"
+  },
   "scripts": {
-    "build": "pnpm -r build",
+    "// dev & build (all)": "──────────────",
     "dev": "pnpm -r --parallel dev",
-    "clean": "pnpm -r exec rimraf .nuxt .output dist node_modules",
+    "build": "pnpm -r build",
+    "preview": "pnpm -r preview",
+    "// app-specific helpers": "──────────────",
     "dev:sass": "pnpm --filter @apps/sass dev",
     "build:sass": "pnpm --filter @apps/sass build",
     "preview:sass": "pnpm --filter @apps/sass preview",
     "dev:ui": "pnpm --filter @pkgs/ui dev",
     "build:ui": "pnpm --filter @pkgs/ui build",
     "preview:ui": "pnpm --filter @pkgs/ui preview",
-    "lint": "eslint . --ext .js,.ts,.vue",
-    "lint:fix": "eslint . --fix --ext .js,.ts,.vue",
-    "format": "prettier --write .",
-    "prepare": "husky",
-    "commitlint": "commitlint --edit"
+    "dev:core-plugins": "pnpm --filter @pkgs/core-plugins dev",
+    "build:core-plugins": "pnpm --filter @pkgs/core-plugins build",
+    "preview:core-plugins": "pnpm --filter @pkgs/core-plugins preview",
+    "// quality": "──────────────",
+    "lint": "eslint . --ext .js,.ts,.vue --max-warnings=0 --cache --cache-location ./.cache/eslint",
+    "lint:fix": "eslint . --fix --ext .js,.ts,.vue --cache --cache-location ./.cache/eslint",
+    "format": "prettier -w .",
+    "format:check": "prettier -c .",
+    "// maintenance": "──────────────",
+    "clean": "pnpm -r exec rimraf .nuxt .output dist node_modules",
+    "clean:root": "rimraf .pnpm-store .cache node_modules",
+    "prepare": "husky install",
+    "// commit hooks": "──────────────",
+    "commitlint": "commitlint --edit $1"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
@@ -44,7 +55,12 @@
     "vue-eslint-parser": "^10.2.0"
   },
   "lint-staged": {
-    "*.{js,ts,vue}": "eslint --fix",
-    "*.{js,ts,vue,css,md,json}": "prettier --write --ignore-unknown"
+    "*.{js,ts,vue}": "eslint --fix --cache --cache-location ./.cache/eslint",
+    "*.{js,ts,vue,css,md,json}": "prettier -w --ignore-unknown"
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
   }
 }
