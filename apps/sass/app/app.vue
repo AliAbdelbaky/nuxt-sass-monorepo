@@ -1,5 +1,6 @@
 <template>
   <UiButton @click="getUsers"> hello from buttom </UiButton>
+  <UiButton @click="toggleEncryrption">{{ stringToEncode }}</UiButton>
   <UiInput placeholder="What is your name?" />
   <!-- overrided by 'app' unocss config -->
   <div class="bg-app">red bg</div>
@@ -8,8 +9,9 @@
   <div class="bg-ui">green bg</div>
 </template>
 <script setup lang="ts">
+import { ref } from 'vue';
 import { useNuxtApp } from '#imports';
-const { $api_provider } = useNuxtApp();
+const { $api_provider, $crypto } = useNuxtApp();
 type MeResponse = { id: string; email: string };
 
 const payload = (type: 'formData' | 'json') => {
@@ -23,10 +25,20 @@ const payload = (type: 'formData' | 'json') => {
   return json;
 };
 async function getUsers() {
+  console.log($crypto);
   const me = await $api_provider!<MeResponse>('/v1/auth/login', {
     method: 'POST',
     body: payload('json'),
   });
   console.log(me);
 }
+
+const stringToEncode = ref('Hello World');
+const toggleEncryrption = async () => {
+  if (stringToEncode.value === 'Hello World') {
+    stringToEncode.value = await $crypto!.encrypt(stringToEncode.value);
+  } else {
+    stringToEncode.value = await $crypto!.decrypt(stringToEncode.value);
+  }
+};
 </script>

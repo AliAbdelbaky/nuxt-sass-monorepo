@@ -1,23 +1,17 @@
-import { defineNuxtPlugin, useCookie } from '#imports';
+import { defineNuxtPlugin } from '#imports';
 import config from '#build/api-provider-config.mjs';
-import { onErrorHandler, onSuccessHandler } from '#build/api-provider-handlers.mjs';
+import {
+  onErrorHandler,
+  onSuccessHandler,
+  onRequestHandler,
+} from '#build/api-provider-handlers.mjs';
 import { validUrl, safeJson, getQueryString, toIError } from './api-utils';
-import type { IError, Lang } from './api-utils';
+import type { IError, IOnRequestContext } from './api-utils';
 
-type CryptoLike = { decrypt: (input: string) => Promise<string> | string } | undefined;
-
-export default defineNuxtPlugin((nuxtApp) => {
+export default defineNuxtPlugin(() => {
   const BASE_URL: string = config.baseURL || '';
-  const LANG_COOKIE = useCookie<Lang | string>(config.localeCookieName);
-  const AUTH_COOKIE = useCookie<string>(config.tokenCookieName);
   const DEFAULT_TIMEOUT_MS: number = config.defaultTimeoutMs ?? 20_000;
 
-  const DEFAULT_HEADERS: Readonly<Record<string, string>> = {
-    Accept: 'application/json',
-    'Accept-Language': (LANG_COOKIE.value as string) || 'en',
-  };
-
-  /** Normalize any HeadersInit into a plain mutable record */
   const normalizeHeaders = (headers?: HeadersInit): Record<string, string> => {
     if (!headers) return {};
     if (headers instanceof Headers) return Object.fromEntries(headers.entries());
@@ -25,11 +19,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     return { ...(headers as Record<string, string>) };
   };
 
-  /** If body is FormData, remove any existing content-type so browser sets boundary automatically */
-  const dropContentTypeForFormData = (
-    headers: Record<string, string>,
-    body: unknown
-  ): Record<string, string> => {
+  const dropContentTypeForFormData = (headers: Record<string, string>, body: unknown) => {
     if (body instanceof FormData) {
       for (const k of Object.keys(headers)) {
         if (k.toLowerCase() === 'content-type') delete headers[k];
@@ -38,13 +28,13 @@ export default defineNuxtPlugin((nuxtApp) => {
     return headers;
   };
 
-  /** Combine our timeout signal with any user-provided signal (when supported) */
   const combineSignals = (a: AbortSignal, b?: AbortSignal): AbortSignal => {
-    if (b && typeof AbortSignal?.any === 'function') return AbortSignal.any([a, b]);
+    if (b && typeof (AbortSignal as unknown).any === 'function') {
+      return (AbortSignal as unknown).any([a, b]);
+    }
     return a;
   };
 
-  /** Ensure GET/HEAD have no body */
   const shouldOmitBody = (method?: string): boolean => {
     const m = (method || 'GET').toUpperCase();
     return m === 'GET' || m === 'HEAD';
@@ -60,60 +50,53 @@ export default defineNuxtPlugin((nuxtApp) => {
       | null,
     queries?: Record<string, unknown>
   ): Promise<T | undefined> {
+    // Call user onRequest
+    const ctx: IOnRequestContext = {
+      endpoint,
+      options: options ?? null,
+      queries: { ...(queries ?? {}) },
+      headers: {},
+      baseURL: BASE_URL,
+    };
+    const maybe = await onRequestHandler(ctx);
+    const r = maybe || ctx;
+
     // Build URL
-    const base = validUrl(endpoint, BASE_URL);
-    const qs = queries ? getQueryString(queries) : '';
+    const base = validUrl(r.endpoint, BASE_URL);
+    const qs = r.queries ? getQueryString(r.queries) : '';
     const url = qs ? `${base}?${qs}` : base;
 
-    // Token decrypt (optional)
-    const cryptoSvc: CryptoLike = (nuxtApp as unknown as { $crypto?: CryptoLike }).$crypto;
-    const tokenCipher = AUTH_COOKIE.value;
-    let token: string | undefined;
-    if (tokenCipher) {
-      try {
-        const maybe = cryptoSvc?.decrypt(tokenCipher);
-        token = typeof maybe === 'string' ? maybe : await maybe;
-      } catch {
-        token = tokenCipher; // fallback to raw token if decrypt fails
-      }
-    }
-
-    // Headers
+    // Merge headers (user + onRequest only)
     let headers: Record<string, string> = {
-      ...DEFAULT_HEADERS,
-      ...normalizeHeaders(options?.headers),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...normalizeHeaders(r.options?.headers),
+      ...r.headers,
     };
 
-    // Body handling
+    // Body
     let body: BodyInit | undefined;
-    if (options?.body instanceof FormData) {
-      headers = dropContentTypeForFormData(headers, options.body);
-      body = options.body;
-    } else if (options?.body && typeof options.body === 'object') {
-      // Auto JSON for plain objects
+    if (r.options?.body instanceof FormData) {
+      headers = dropContentTypeForFormData(headers, r.options.body);
+      body = r.options.body;
+    } else if (r.options?.body && typeof r.options.body === 'object') {
       headers['Content-Type'] = 'application/json';
-      body = JSON.stringify(options.body);
+      body = JSON.stringify(r.options.body);
     }
 
-    // Do not send body for GET/HEAD
-    if (shouldOmitBody(options?.method)) {
-      body = undefined;
-    }
+    if (shouldOmitBody(r.options?.method)) body = undefined;
 
     // Timeout
     const controller = new AbortController();
     const timeout = setTimeout(
       () => controller.abort('Request timeout'),
-      options?.timeoutMs ?? DEFAULT_TIMEOUT_MS
+      r.options?.timeoutMs ?? DEFAULT_TIMEOUT_MS
     );
-    const signal = combineSignals(controller.signal, options?.signal as AbortSignal | undefined);
+    const signal = combineSignals(controller.signal, r.options?.signal as AbortSignal | undefined);
 
     let response: Response;
     try {
       response = await fetch(url, {
-        ...options,
-        headers, // keep ours last for normalized shape
+        ...r.options,
+        headers,
         body,
         signal,
       });
@@ -137,11 +120,10 @@ export default defineNuxtPlugin((nuxtApp) => {
     }
 
     const data = await safeJson<T>(response);
-
     try {
-      await onSuccessHandler(endpoint, data);
+      await onSuccessHandler(r.endpoint, data);
     } catch {
-      // never let a user hook break the caller
+      /* swallow */
     }
 
     return data;

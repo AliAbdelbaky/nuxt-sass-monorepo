@@ -1,4 +1,4 @@
-import type { IOnErrorHandler } from '~/modules/api-provider/runtime/api-utils';
+import type { IOnErrorHandler } from '@pkgs/core-plugins';
 
 const onErrorHandler: IOnErrorHandler = async (status, err) => {
   console.log({

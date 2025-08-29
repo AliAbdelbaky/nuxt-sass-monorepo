@@ -1,4 +1,4 @@
-import type { IOnSuccessHandler } from '~/modules/api-provider/runtime/api-utils';
+import type { IOnSuccessHandler } from '@pkgs/core-plugins';
 
 const onSuccessHandler: IOnSuccessHandler = async (endpoint, data) => {
   console.log({

@@ -9,20 +9,35 @@ export interface IError {
 }
 
 export type UnknownRecord = Record<string, unknown>;
-export type Lang = 'ar' | 'en';
 
 /**
- * Signature for custom error handlers.
- * The handler should either return void or a Promise<void>.
+ * BEFORE-REQUEST hook context (mutable)
  */
+export interface IOnRequestContext {
+  /** Final endpoint (relative or absolute) */
+  endpoint: string;
+  /** Mutable headers bag merged into the request. */
+  headers: Record<string, string>;
+  /** RequestInit-ish (you can set method, body, etc.) */
+  options:
+    | (Omit<RequestInit, 'body'> & {
+        timeoutMs?: number;
+        body?: Record<string, unknown> | FormData;
+      })
+    | null;
+  /** Mutable query params bag */
+  queries: Record<string, unknown>;
+  /** Info you may use to decide (read-only hint) */
+  baseURL: string;
+}
+
+export interface IOnRequest {
+  (ctx: IOnRequestContext): void | IOnRequestContext | Promise<IOnRequestContext | void>;
+}
 export interface IOnErrorHandler {
   (status: number, err: IError): void | Promise<void>;
 }
 
-/**
- * Signature for custom success handlers.
- * The handler should either return void or a Promise<void>.
- */
 export interface IOnSuccessHandler {
   <T = unknown>(endpoint: string, data: T | undefined): void | Promise<void>;
 }
@@ -76,9 +91,9 @@ export function toIError(input: unknown, fallbackMessage: string): IError {
     }
   };
 
-  if (obj.errors) pushErrors(obj.errors);
-  if (obj.detail) pushErrors(obj.detail);
-  if (obj.details) pushErrors(obj.details);
+  if ((obj as UnknownRecord).errors) pushErrors((obj as UnknownRecord).errors);
+  if ((obj as UnknownRecord).detail) pushErrors((obj as UnknownRecord).detail);
+  if ((obj as UnknownRecord).details) pushErrors((obj as UnknownRecord).details);
   if (obj.data && (obj.data as UnknownRecord).errors)
     pushErrors((obj.data as UnknownRecord).errors);
 
@@ -89,6 +104,5 @@ export function toIError(input: unknown, fallbackMessage: string): IError {
   }
 
   if (!details.errors) details.errors = {};
-
   return { message, details };
 }
