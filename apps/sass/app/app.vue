@@ -1,44 +1,34 @@
-<template>
-  <UiButton @click="getUsers"> hello from buttom </UiButton>
-  <UiButton @click="toggleEncryrption">{{ stringToEncode }}</UiButton>
-  <UiInput placeholder="What is your name?" />
-  <!-- overrided by 'app' unocss config -->
-  <div class="bg-app">red bg</div>
+<script lang="ts" setup>
+import 'vue-sonner/style.css';
+import { ConfigProvider } from 'radix-vue';
+import { Toaster } from 'vue-sonner';
+import { useId, useCookie } from '#imports';
+import { defaultLocale, localeCookieName } from '~/constants/i18n';
+const useIdFunction = () => useId();
 
-  <!-- from 'ui' unocss config -->
-  <div class="bg-ui">green bg</div>
-</template>
-<script setup lang="ts">
-import { ref } from 'vue';
-import { useNuxtApp } from '#imports';
-const { $api_provider, $crypto } = useNuxtApp();
-type MeResponse = { id: string; email: string };
+const rtlLanguages = ['ar-sa'];
+const langCookie = useCookie(localeCookieName, {
+  default: () => defaultLocale,
+});
 
-const payload = (type: 'formData' | 'json') => {
-  const json = { email: 'ali.abdelbaky2000@gmail.com', password: '1234@1234@Aa' };
-  if (type === 'formData') {
-    const formData = new FormData();
-    formData.append('email', json.email);
-    formData.append('password', json.password);
-    return formData;
-  }
-  return json;
-};
-async function getUsers() {
-  console.log($crypto);
-  const me = await $api_provider!<MeResponse>('/v1/auth/login', {
-    method: 'POST',
-    body: payload('json'),
-  });
-  console.log(me);
-}
+const getHtmlAttributes = (locale: string = 'en-us') => {
+  const isRtl = rtlLanguages.includes(locale);
+  const dir = isRtl ? 'rtl' : 'ltr';
+  const lang = locale.toLowerCase();
 
-const stringToEncode = ref('Hello World');
-const toggleEncryrption = async () => {
-  if (stringToEncode.value === 'Hello World') {
-    stringToEncode.value = await $crypto!.encrypt(stringToEncode.value);
-  } else {
-    stringToEncode.value = await $crypto!.decrypt(stringToEncode.value);
-  }
+  return {
+    lang,
+    dir,
+  };
 };
 </script>
+<template>
+  <ConfigProvider :use-id="useIdFunction" :dir="getHtmlAttributes(langCookie).dir">
+    <Toaster />
+    <nuxtLayout>
+      <main vaul-drawer-wrapper class="relative min-h-dvh">
+        <NuxtPage />
+      </main>
+    </nuxtLayout>
+  </ConfigProvider>
+</template>
